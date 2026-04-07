@@ -1,0 +1,45 @@
+#!/bin/bash
+set -e
+
+
+# Check if enough input files are provided
+# if [ "$#" -lt 1 ]; then
+#    echo "Usage: $0 <input_file> [num_threads] [directory]"
+#    exit 1
+#fi
+
+input_file="$1"
+num_threads="${2:-1}"  # The default value is 1
+dir=$3
+out=${input_file}_trf
+
+if [ ! -d $out ]; then
+        mkdir $out;
+else
+        echo "Warning: $out already exists. previous results are overwrited"
+		rm -rf $out
+		mkdir -p $out
+fi
+
+
+
+# Run TRF command
+trf "$input_file" 2 7 7 80 10 50 500 -f -d -m
+
+mv $input_file.2.7.7.80.10.50.500.*  $out
+mv $input_file.*.2.7.7.80.10.50.500.* $out
+
+echo "Finish identify TRF"
+
+# Merge TRF output
+cd $out
+cat *.txt.html > TRF.txt
+
+# Extract required information
+grep 'Sequence: contig\|Length:\|Indices\|PeriodIndices\|Period size:' TRF.txt > TEST.txt
+sed -i '/Left/d' TEST.txt
+sed -i '/Right/d' TEST.txt
+grep "Sequence:" TEST.txt | sed 's/Sequence: //' > "$dir/REF-trf.csv"
+cd $DIR
+echo "Processing complete. Output file is $dir/REF-trf.csv"
+

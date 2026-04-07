@@ -1,0 +1,58 @@
+#!/bin/bash
+set -e
+
+input_file="$1"
+input_illumina_1="$2"
+input_illumina_2="$4"
+illumina_read_length="$3"
+DIR="$5"
+out=${input_file}_bwa
+
+if [ ! -d $out ]; then
+        mkdir $out;
+else
+        echo "Warning: $out already exists. previous results are overwrited"
+		rm -rf $out
+		mkdir -p $out
+fi
+
+
+echo "done parse variable"
+
+# Set DIR variable
+#SCRIPT=$(realpath "$0")
+#DIR=$(dirname "$SCRIPT")
+
+# Debugging: print the input files
+#echo "Input file: $input_file"
+#echo "Illumina file: $input_illumina"
+
+
+# bwa building database 
+bwa index "$input_file"
+echo "done build index for bwa alignment"
+mv ${input_file}.* $out
+
+cat "$input_illumina_1" "$input_illumina_2" > $out/input_illumina
+bwa mem -t "$N_threads" -a "$out/$input_file" "$out/input_illumina" > $out/2daitotal.sam
+
+echo "finish bwa alignment"
+
+cd $out
+# Process input file to generate contigsize.txt
+awk '/^>/{if (l!="") print l; print; l=0; next}{l+=length($0)}END{print l}' ../"$input_file" > contigsizetmp.txt
+awk '/^>/ {sub(/^>/, ""); printf("\n%s ", $0); next} {printf("%s", $0)} END {printf("\n")}' contigsizetmp.txt > contigsize.txt
+
+# subset forward (flag==0) and reverse mapping (flag==16)
+awk '$2==0 {printf $3 "\t" $4 "\n"}' 2daitotal.sam > 02daitotal.txt
+awk '$2==16 {printf $3 "\t" $4 "\n"}' 2daitotal.sam > 162daitotal.txt
+
+# Run R
+Rscript "${DIR}/bin/filteredge.R" "$illumina_read_length"
+
+sed '1d' total.csv | cut -d ',' -f 2- > REF-illumina.csv
+mv REF-illumina.csv ..
+cd ..
+
+# Remove temporary files
+# rm -f daxiaotmp.txt daxiao.txt

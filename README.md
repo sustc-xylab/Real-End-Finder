@@ -1,4 +1,4 @@
-# Real-End-Finder
+# REF
 **Real End Finder** 
 ## Dsecription
 The Real End Finder (REF) is designed to address the issue of determining the completeness of linear fragments like plasmid conitgs. Linear fragments are commonly observed when assembling sequences, particularly when the coverage of assembled contigs is high and they do not form circular structures. In such cases, the REF can be utilized to assess the completeness of linear fragments.
